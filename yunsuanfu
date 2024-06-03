@@ -1,0 +1,13 @@
+//前置++运算与后置++运算的区别
+#include <stdio.h>
+int main()
+{
+	int i,x,y;
+	i=5;
+	x=i++;		//后缀运算，先把i的值赋给x，然后i的值加1
+	printf("i=%d,x=%d\n",i,x);
+	i=5;
+	y=++i;		//前缀运算，先使i的值加1，然后将i的值赋给y
+	printf("i=%d,y=%d\n",i,y);
+	return 0;
+}
