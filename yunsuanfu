@@ -11,3 +11,7 @@ int main()
 	printf("i=%d,y=%d\n",i,y);
 	return 0;
 }
+
+//运行结果：
+//i=6,x=5
+//i=6,y=6
