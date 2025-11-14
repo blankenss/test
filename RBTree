@@ -1,0 +1,221 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "../inc/common_tree.h"
+
+
+
+//4 创建结点 返回值为结点地址,（在那个树里创建什么数据）
+treeNode* create_node(rbtree* tree,void* data){
+    treeNode* new_node=(treeNode*)calloc(1,sizeof(treeNode));
+    if(new_node==NULL)
+    {
+        printf("内存分配失败\n");
+        exit(EXIT_FAILURE);
+    }
+    //初始化
+    new_node->data=data;
+    //创建的结点默认为红
+    new_node->color=red;
+    new_node->parent=tree->nil;
+    new_node->lchild=tree->nil;
+    new_node->rchild=tree->nil;
+    return new_node;
+}
+
+//5 创建红黑树
+rbtree* create_tree(){
+    rbtree* tree=(rbtree*)calloc(1,sizeof(rbtree));
+    if(tree==NULL)
+    {
+        printf("内存分配失败\n");
+        exit(EXIT_FAILURE);
+    }
+    //创建哨兵结点
+    tree->nil=(treeNode*)calloc(1,sizeof(treeNode));//tree->nil哨兵有实体
+    //哨兵为黑色
+    tree->nil->color=black;
+    //初始化根结点
+    tree->root=tree->nil;//tree->root根节点无实体，说明一个结点为根结点
+    return tree;
+}
+//6插入结点
+void insert_node(rbtree* tree,void *data){
+    //创建一个新结点
+    treeNode *z=create_node(tree,data);
+    //临时结点，来存储父节点
+    treeNode *y=tree->nil;
+    //临时结点，从根节点开始查找z的父节点
+    treeNode *x=tree->root;
+    while(x!=tree->nil)//查找父节点，直到叶子停止
+    {
+        y=x;//将x的值给y
+        if(z->data>x->data)
+        {//较大的数存放在树的右边
+            //将右子结点赋给x再次比较，直到没有子结点
+            x=x->rchild;   
+        }else {
+            x=x->lchild;
+        }
+        //直到x=tree->nil, x的位置就是z要存放的位置
+        //此时y为x的上一个结点
+    }
+    z->parent=y;
+    if(y==tree->root)
+    {
+        tree->root=z;
+    }else if(z->data>y->data){
+        y->rchild=z;
+    }else{
+        y->lchild=z;
+    }
+    //插入结点后，需要修复黑红树使其保持平衡
+    insert_fixup(tree,z);
+}
+//7插入修复
+void insert_fix_up(rbtree* tree,treeNode* node)
+{//如果为根结点，为黑色
+    if(node==tree->root)//node 是自己
+    {
+        tree->root->color=black;
+    }
+    while(node->parent==red)
+    {
+        //判断父节点在祖父结点的什么位置
+        if(node->parent==node->parent->parent->lchild)//父节点在祖父结点左边
+        {
+            //获取叔叔结点，看叔叔结点为什么颜色
+            treeNode* uncle=node->parent->parent->rchild;
+            if(uncle->color==red)//叔叔为红色
+            {
+                //祖父（黑），叔叔（红），父亲（红）全部颜色取反
+                uncle->color=black;//叔叔变化 黑
+                node->parent->color=black;//父变黑
+                node->parent->parent->color=red;//祖父变红
+                //然后将祖父结点变为新结点，新节点是node
+                node=node->parent->parent;
+                //再次判断是否满足平衡条件
+            }else//叔叔为黑色
+            {   //判断子节点在父节点的哪边
+                if(node=node->parent->rchild){
+                    //LL型，以祖父结点右旋，变换父节点、祖父结点颜色
+                    node->parent->color=black;//父变黑
+                    node->parent->parent->color=red;//祖父变红
+                    right_rotation(tree,node->parent->parent); //祖父右旋
+                }else//子结点在父节点的右边 
+                {
+                    //LR型，先以父节点左旋-->就变成了LL型-->原本的父节点变为了子结点-->再次进行判断
+                    node=node->parent;//先将新节点变为父节点，因为旋转后父节点会变成新的子节点，
+                    //以父节点左旋，node 是父结点
+                    left_rotation(tree,node);//
+                }
+            }
+        }else//父节点在祖父结点右边
+        {
+            treeNode* uncle=node->parent->parent->rchild;
+            if(uncle->color==red)//叔叔为红色
+            {
+                //祖父（黑），叔叔（红），父亲（红）全部颜色取反
+                uncle->color=black;//叔叔变化 黑
+                node->parent->color=black;//父变黑
+                node->parent->parent->color=red;//祖父变红
+                //然后将祖父结点变为新结点，新节点是node
+                node=node->parent->parent;
+                //再次判断是否满足平衡条件
+            }else //叔叔为黑色
+            {
+                //判断子结点在左还是右
+                if(node=node->parent->rchild){
+                    //RR型，以祖父结点右旋，变换父节点、祖父结点颜色
+                     node->parent->color=black;//父变黑
+                    node->parent->parent->color=red;//祖父变红
+                    left_rotation(tree,node->parent->parent); //祖父左旋
+                }else//子结点在父节点的左边 
+                {   //RL型
+                    node=node->parent;//先将新节点变为父节点，因为旋转后父节点会变成新的子节点，
+                    //以父节点右旋，node 是父结点
+                    right_rotation(tree,node);//
+                }
+            }
+        }
+
+    }
+
+    
+}
+
+//8.左旋
+void left_rotation(rbtree* tree,treeNode *node){
+    // 检查输入参数的有效性
+    if (tree == NULL || node == NULL || node == tree->nil) {
+        return;
+    }
+    treeNode *node_r=node->rchild;//获得结点的右子结点
+    // 检查左子节点是否存在且不是哨兵
+    if (node_r == tree->nil) {
+        return; // 无法进行左旋
+    }
+
+    //1将node->rchild 的值赋值为node_1->lchild
+    node->rchild=node_r->lchild;
+    //判断node_r->lchild是否为哨兵tree->nil
+    if(node_r->lchild!=tree->nil){
+        node_r->lchild->parent=node;
+    }
+    //2.将node的右子节点和node的父级双向链接
+    node_r->parent=node->parent;
+    //判断node的父节点是否是根结点
+    if(node->parent!=tree->nil){
+        if(node==node->parent->lchild)
+        {
+            node->parent->lchild=node_r;
+        }else{
+            node->parent->rchild=node_r;
+        }
+    }else{
+        tree->root=node_r;
+    }
+    //3.将node 与node_r(node的右子结点双向链接)
+/* 错误方式：先对儿子说"他是你爸爸"，再对爸爸说"他是你儿子"
+正确方式：先对爸爸说"他是你儿子"，再对儿子说"他是你爸爸" */
+    node_r->lchild=node;//先确定子结点
+    node->parent=node_r;//再确定父结点
+}
+
+//9右旋
+void right_rotation(rbtree* tree,treeNode *node){
+    // 检查输入参数的有效性
+    if (tree == NULL || node == NULL || node == tree->nil) {
+        return;
+    }
+    //获得该节点的左子结点
+    treeNode* node_l=node->lchild;
+    // 检查左子节点是否存在且不是哨兵
+    if (node_l == tree->nil) {
+        return; // 无法进行右旋
+    }
+
+    //1.将node_l的右子结点给node的左子结点上
+    node->lchild=node_l->rchild;
+    //判断node_l->rchild是否为哨兵结点
+    if(node_l->rchild!=tree->nil)
+    {
+        node_l->rchild->parent=node;
+    }
+    //2.将node_l与node的父节点相互连接
+    node_l->parent=node->parent;//
+    //判断父节点是否是根结点
+    if(node->parent!=tree->nil)//不是根结点
+    {
+        if(node->parent->lchild==node)
+        {
+            node->parent->lchild=node_l;
+        }else{
+            node->parent->rchild=node_l;
+        }
+    }else{
+        tree->root=node_l;
+    }
+    //3.node_l与node相互连接，父子关系交换
+    node_l->rchild=node;
+    node->parent=node_l;
+}
